@@ -1,20 +1,25 @@
-"""Authentication helpers: Keycloak direct-grant login, token refresh, and persistence."""
+"""Authentication helpers: Keycloak Authorization Code flow, token refresh, persistence."""
 
 from __future__ import annotations
 
 import json
 import logging
 import os
+import re
 import time
+import uuid
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+from urllib.parse import parse_qs, urlparse
 
 import aiohttp
 
 from yunoheat.const import (
     DEFAULT_TOKEN_PATH_PARTS,
+    KEYCLOAK_AUTH_URL,
     KEYCLOAK_CLIENT_ID,
+    KEYCLOAK_REDIRECT_URI,
     KEYCLOAK_SCOPES,
     KEYCLOAK_TOKEN_URL,
     TOKEN_REFRESH_MARGIN,
@@ -105,23 +110,97 @@ def save_tokens(tokens: TokenData) -> None:
         raise
 
 
+async def _fetch_auth_code(
+    session: aiohttp.ClientSession,
+    username: str,
+    password: str,
+) -> str:
+    """Automate the Keycloak Authorization Code flow without a browser.
+
+    Steps:
+      1. GET the Keycloak login page to obtain the form action URL.
+      2. POST credentials to the form action URL with redirects disabled.
+      3. Extract the authorization code from the ``Location`` header fragment.
+
+    Returns the authorization code string.
+    Raises AuthError on any failure.
+    """
+    auth_params = {
+        "client_id": KEYCLOAK_CLIENT_ID,
+        "redirect_uri": KEYCLOAK_REDIRECT_URI,
+        "response_mode": "fragment",
+        "response_type": "code",
+        "scope": KEYCLOAK_SCOPES,
+        "nonce": str(uuid.uuid4()),
+        "state": str(uuid.uuid4()),
+    }
+
+    # Step 1 — fetch the login page and extract the form action URL
+    async with session.get(KEYCLOAK_AUTH_URL, params=auth_params) as resp:
+        if resp.status != 200:
+            raise AuthError(
+                f"Keycloak login page returned HTTP {resp.status}", status=resp.status
+            )
+        html = await resp.text()
+
+    match = re.search(r'<form[^>]+action="([^"]+)"', html)
+    if not match:
+        raise AuthError("Could not find login form in Keycloak auth page")
+    form_action = match.group(1).replace("&amp;", "&")
+
+    # Step 2 — POST credentials; capture the redirect without following it
+    form_data = {
+        "username": username,
+        "password": password,
+        "rememberMe": "on",
+        "credentialId": "",
+    }
+    async with session.post(form_action, data=form_data, allow_redirects=False) as resp:
+        if resp.status not in (301, 302):
+            raise AuthError(
+                f"Expected redirect after login, got HTTP {resp.status}. "
+                "Check your credentials.",
+                status=resp.status,
+            )
+        location = resp.headers.get("Location", "")
+
+    # Step 3 — parse the code from the Location header
+    # response_mode=fragment → code is in the URL fragment (#code=xxx)
+    # also handle response_mode=query as a fallback
+    parsed = urlparse(location)
+    for params in (parse_qs(parsed.fragment), parse_qs(parsed.query)):
+        if "error" in params:
+            error = params["error"][0]
+            desc = params.get("error_description", [""])[0]
+            raise AuthError(f"{error}: {desc}")
+        if "code" in params:
+            return params["code"][0]
+
+    raise AuthError(f"No authorization code in Keycloak redirect: {location}")
+
+
 async def login(
     session: aiohttp.ClientSession,
     username: str,
     password: str,
 ) -> TokenData:
-    """Authenticate via Keycloak direct grant (grant_type=password).
+    """Authenticate via the Keycloak Authorization Code flow (headless).
 
-    Raises AuthError on failure. Saves tokens to disk on success.
+    Direct grant (grant_type=password) is not enabled for this client.
+    This function automates the browser-based login by posting credentials
+    directly to the Keycloak form and capturing the auth code from the redirect.
+
+    Saves tokens to disk on success. Raises AuthError on failure.
     """
-    data = {
-        "grant_type": "password",
+    code = await _fetch_auth_code(session, username, password)
+
+    token_data = {
+        "grant_type": "authorization_code",
+        "code": code,
         "client_id": KEYCLOAK_CLIENT_ID,
-        "username": username,
-        "password": password,
-        "scope": KEYCLOAK_SCOPES,
+        "redirect_uri": KEYCLOAK_REDIRECT_URI,
     }
-    async with session.post(KEYCLOAK_TOKEN_URL, data=data) as resp:
+    async with session.post(KEYCLOAK_TOKEN_URL, data=token_data) as resp:
         body = await resp.json(content_type=None)
         if resp.status != 200:
             error = body.get("error", "unknown_error")

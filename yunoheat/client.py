@@ -26,9 +26,8 @@ from yunoheat.models.account import (
 )
 from yunoheat.models.billing import (
     Bill,
+    BillsResponse,
     CreditBalancesResponse,
-    Invoice,
-    InvoicesResponse,
     OpenBillDue,
 )
 from yunoheat.models.consumption import (
@@ -438,27 +437,21 @@ class YunoHeatClient:
         date_to: datetime | None = None,
         page: int = 1,
         count: int = 10,
-    ) -> InvoicesResponse:
-        """Return paginated invoices for the person customer."""
+    ) -> BillsResponse:
+        """Return paginated bills for the person customer."""
         ctx = await self._ctx()
-        params: dict[str, Any] = {
-            "customerId": ctx.person_customer_id,
-            "invoice-status": "invoice",
-            "page": page,
-            "count": count,
-        }
-        if ctx.person_billing_profile_id is not None:
-            params["billing-profile"] = ctx.person_billing_profile_id
+        params: dict[str, Any] = {"page": page, "count": count}
         if date_from is not None:
             params["time-from"] = self._dt_to_epoch_ms(date_from)
         if date_to is not None:
             params["time-to"] = self._dt_to_epoch_ms(date_to)
-        raw = await self._conn.get("/invoices", params=params)
-        # API may return a list or a paginated wrapper
+        raw = await self._conn.get(
+            f"/customers/{ctx.person_customer_id}/bills", params=params
+        )
         if isinstance(raw, list):
-            objects = [Invoice.model_validate(i) for i in raw]
-            return InvoicesResponse(objects=objects, total_num=len(objects))
-        return InvoicesResponse.model_validate(raw)
+            objects = [Bill.model_validate(i) for i in raw]
+            return BillsResponse(objects=objects, total_num=len(objects))
+        return BillsResponse.model_validate(raw)
 
     async def get_bill(self, bill_id: int) -> Bill:
         """Return a specific bill by ID."""

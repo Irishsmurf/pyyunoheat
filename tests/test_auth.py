@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 import time
 
 import pytest
@@ -16,8 +17,28 @@ from yunoheat.auth import (
     refresh,
     save_tokens,
 )
-from yunoheat.const import KEYCLOAK_TOKEN_URL
+from yunoheat.const import KEYCLOAK_AUTH_URL, KEYCLOAK_TOKEN_URL
 from yunoheat.exceptions import AuthError, TokenExpiredError
+
+# ---------------------------------------------------------------------------
+# Login flow helpers
+# ---------------------------------------------------------------------------
+
+# Minimal Keycloak login page HTML containing a form with a known action URL
+_FORM_ACTION = (
+    "https://app.tridenstechnology.com/auth/realms/kaizen-energy-sandbox"
+    "/login-actions/authenticate"
+    "?session_code=testsession&execution=testexec&client_id=mobile-yuno&tab_id=testtab"
+)
+_FAKE_LOGIN_HTML = (
+    f'<form id="kc-form-login" action="{_FORM_ACTION.replace("&", "&amp;")}" method="post">'
+    '<input name="username"/><input name="password"/></form>'
+)
+# The redirect Keycloak sends after successful login (code in the fragment)
+_FAKE_REDIRECT = (
+    "https://kaizen-energy.tridenstechnology.com/monetization/self-care/account"
+    "#code=test-auth-code-12345&state=somestate"
+)
 
 # ---------------------------------------------------------------------------
 # TokenData helpers
@@ -126,7 +147,7 @@ def test_load_tokens_corrupt_file(tmp_path, monkeypatch) -> None:
 
 
 # ---------------------------------------------------------------------------
-# login()
+# login() — Authorization Code flow (three HTTP calls)
 # ---------------------------------------------------------------------------
 
 
@@ -139,6 +160,15 @@ async def test_login_success(tmp_path, monkeypatch) -> None:
 
     resp_data = load_fixture("token_response")
     with aioresponses() as m:
+        # Step 1: GET Keycloak login page
+        m.get(
+            re.compile(rf"{re.escape(KEYCLOAK_AUTH_URL)}.*"),
+            status=200,
+            body=_FAKE_LOGIN_HTML,
+        )
+        # Step 2: POST credentials → 302 with auth code in fragment
+        m.post(_FORM_ACTION, status=302, headers={"Location": _FAKE_REDIRECT})
+        # Step 3: exchange code for tokens
         m.post(KEYCLOAK_TOKEN_URL, payload=resp_data, status=200)
         async with aiohttp.ClientSession() as session:
             tokens = await login(session, "user@example.com", "password")
@@ -154,18 +184,22 @@ async def test_login_bad_credentials(tmp_path, monkeypatch) -> None:
 
     monkeypatch.setattr(auth_module, "_token_path", lambda: tmp_path / "tokens.json")
 
-    error_payload = {
-        "error": "invalid_grant",
-        "error_description": "Invalid user credentials",
-    }
     with aioresponses() as m:
-        m.post(KEYCLOAK_TOKEN_URL, payload=error_payload, status=401)
+        # Step 1: GET login page succeeds
+        m.get(
+            re.compile(rf"{re.escape(KEYCLOAK_AUTH_URL)}.*"),
+            status=200,
+            body=_FAKE_LOGIN_HTML,
+        )
+        # Step 2: POST credentials → 200 (Keycloak returns login page with error)
+        m.post(_FORM_ACTION, status=200, body="<html>Invalid username or password.</html>")
         async with aiohttp.ClientSession() as session:
             with pytest.raises(AuthError) as exc_info:
                 await login(session, "user@example.com", "wrongpassword")
 
-    assert exc_info.value.status == 401
-    assert "invalid_grant" in str(exc_info.value)
+    # Keycloak returns 200 (login page with error) instead of a redirect,
+    # so the auth code flow raises AuthError about the unexpected status.
+    assert "200" in str(exc_info.value)
 
 
 # ---------------------------------------------------------------------------

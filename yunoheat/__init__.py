@@ -11,10 +11,9 @@ from yunoheat.exceptions import (
 from yunoheat.models.account import EntityContext, PersonCustomer, PropertyCustomer
 from yunoheat.models.billing import (
     Bill,
+    BillsResponse,
     CreditBalance,
     CreditBalancesResponse,
-    Invoice,
-    InvoicesResponse,
     OpenBillDue,
 )
 from yunoheat.models.consumption import (
@@ -40,8 +39,7 @@ __all__ = [
     "EntityContext",
     # billing models
     "Bill",
-    "Invoice",
-    "InvoicesResponse",
+    "BillsResponse",
     "OpenBillDue",
     "CreditBalance",
     "CreditBalancesResponse",

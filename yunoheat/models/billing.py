@@ -88,3 +88,10 @@ class InvoicesResponse(BaseModel):
 
     objects: list[Invoice] = []
     total_num: int = 0
+
+
+class BillsResponse(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
+    objects: list[Bill] = []
+    total_num: int = 0

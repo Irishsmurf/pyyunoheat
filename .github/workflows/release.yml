@@ -33,9 +33,3 @@ jobs:
 
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
-        # Uses OIDC trusted publishing — no API token required.
-        # One-time setup required:
-        #   1. Create PyPI project "pyyunoheat"
-        #   2. PyPI project → Publishing → add Trusted Publisher:
-        #      owner=paddez, repo=pyyunoheat, workflow=release.yml
-        #   3. GitHub → Settings → Environments → create "pypi"

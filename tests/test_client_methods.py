@@ -174,17 +174,20 @@ async def test_get_invoices(valid_tokens) -> None:
 
     try:
         with aioresponses() as m:
-            m.get(re.compile(rf"{re.escape(API_BASE_URL)}/invoices.*"), payload=fixture)
+            m.get(
+                re.compile(rf"{re.escape(API_BASE_URL)}/customers/232971/bills.*"),
+                payload=fixture,
+            )
             result = await client.get_invoices()
     finally:
         await client.close()
 
     assert result.total_num == 1
     assert len(result.objects) == 1
-    invoice = result.objects[0]
-    assert invoice.id == 100001
-    assert invoice.due_amount == pytest.approx(38.50)
-    assert invoice.start_dt is not None
+    bill = result.objects[0]
+    assert bill.id == 100001
+    assert bill.due_amount == pytest.approx(38.50)
+    assert bill.valid_from_dt is not None
 
 
 # ---------------------------------------------------------------------------

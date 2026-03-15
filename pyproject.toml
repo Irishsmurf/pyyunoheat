@@ -38,7 +38,11 @@ packages = ["yunoheat"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
 addopts = "-p no:homeassistant"
+markers = [
+    "integration: marks tests as integration tests requiring real credentials",
+]
 
 [tool.ruff]
 line-length = 100

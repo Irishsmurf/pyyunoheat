@@ -2,13 +2,16 @@
 
 from __future__ import annotations
 
+import re
+
 import pytest
 from aioresponses import aioresponses
 
 from tests.conftest import load_fixture
+from tests.test_auth import _FAKE_LOGIN_HTML, _FAKE_REDIRECT, _FORM_ACTION
 from yunoheat.auth import TokenData
 from yunoheat.connection import Connection
-from yunoheat.const import API_BASE_URL, KEYCLOAK_TOKEN_URL
+from yunoheat.const import API_BASE_URL, KEYCLOAK_AUTH_URL, KEYCLOAK_TOKEN_URL
 from yunoheat.exceptions import APIError, AuthError
 
 # ---------------------------------------------------------------------------
@@ -138,7 +141,13 @@ async def test_relogin_when_refresh_expired(tmp_path, monkeypatch, fully_expired
     )
     try:
         with aioresponses() as m:
-            # Re-login call
+            # Re-login: full auth code flow (3 steps)
+            m.get(
+                re.compile(rf"{re.escape(KEYCLOAK_AUTH_URL)}.*"),
+                status=200,
+                body=_FAKE_LOGIN_HTML,
+            )
+            m.post(_FORM_ACTION, status=302, headers={"Location": _FAKE_REDIRECT})
             m.post(KEYCLOAK_TOKEN_URL, payload=new_token_resp)
             # Actual API call
             m.get(f"{API_BASE_URL}/site", payload={"id": 142})
