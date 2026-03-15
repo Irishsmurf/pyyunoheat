@@ -1,0 +1,38 @@
+{
+  "id": 232971,
+  "code": "b21afb1f-1e10-4d17-bf8a-cebd07daf40a",
+  "status": "active",
+  "contact_infos": [
+    {
+      "email": "user@example.com",
+      "first_name": "David",
+      "last_name": "Kernan",
+      "address": "Apartment 020 Chambers Square",
+      "city": "Griffith Wood",
+      "zip": "D09 HW1H",
+      "phone": "+353871234567"
+    }
+  ],
+  "pay_info": {
+    "method": "credit_card",
+    "default_credit_card": {
+      "card_type": "visa",
+      "last_4": "6461",
+      "expiration_month": 2,
+      "expiration_year": 2030
+    }
+  },
+  "subscriptions": [
+    {
+      "id": 48770,
+      "code": "SUB_PLATFORM",
+      "name": "David Kernan Platform",
+      "status": "active"
+    }
+  ],
+  "custom_attributes": {
+    "customer_billing_type": "bill-pay",
+    "customer_site_code": "GFW",
+    "customer_supply_status": "ON"
+  }
+}

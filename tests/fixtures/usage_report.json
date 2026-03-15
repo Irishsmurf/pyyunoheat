@@ -1,0 +1,80 @@
+{
+  "aggregations": {
+    "chart": {
+      "buckets": [
+        {
+          "key": "Euro",
+          "doc_count": 28,
+          "by_amount": {
+            "history": {
+              "buckets": [
+                {
+                  "key_as_string": "2026-03-13 00:00:00.000",
+                  "key": 1773446400000,
+                  "reverse": { "sum_amount": { "value": 1.182 } }
+                },
+                {
+                  "key_as_string": "2026-03-14 00:00:00.000",
+                  "key": 1773532800000,
+                  "reverse": { "sum_amount": { "value": 1.306 } }
+                }
+              ]
+            }
+          },
+          "by_quantity": {
+            "history": {
+              "buckets": [
+                {
+                  "key_as_string": "2026-03-13 00:00:00.000",
+                  "key": 1773446400000,
+                  "reverse": { "sum_quantity": { "value": 4.0 } }
+                },
+                {
+                  "key_as_string": "2026-03-14 00:00:00.000",
+                  "key": 1773532800000,
+                  "reverse": { "sum_quantity": { "value": 5.0 } }
+                }
+              ]
+            }
+          }
+        },
+        {
+          "key": "Heat - Meter Value",
+          "doc_count": 14,
+          "by_amount": {
+            "history": {
+              "buckets": [
+                {
+                  "key_as_string": "2026-03-13 00:00:00.000",
+                  "key": 1773446400000,
+                  "reverse": { "sum_amount": { "value": 9804.0 } }
+                },
+                {
+                  "key_as_string": "2026-03-14 00:00:00.000",
+                  "key": 1773532800000,
+                  "reverse": { "sum_amount": { "value": 9809.0 } }
+                }
+              ]
+            }
+          },
+          "by_quantity": {
+            "history": {
+              "buckets": [
+                {
+                  "key_as_string": "2026-03-13 00:00:00.000",
+                  "key": 1773446400000,
+                  "reverse": { "sum_quantity": { "value": 4.0 } }
+                },
+                {
+                  "key_as_string": "2026-03-14 00:00:00.000",
+                  "key": 1773532800000,
+                  "reverse": { "sum_quantity": { "value": 5.0 } }
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  }
+}

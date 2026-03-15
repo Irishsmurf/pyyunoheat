@@ -1,0 +1,13 @@
+{
+  "objects": [
+    {
+      "id": 32762,
+      "type": "payment",
+      "strategy": "owner-first",
+      "name": "Payment Responsible Properties - David Kernan",
+      "owner": { "id": 232971 },
+      "owner_billing_profile": { "id": 47891 }
+    }
+  ],
+  "total_num": 1
+}

@@ -1,0 +1,8 @@
+{
+  "access_token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhNGIzZjdmZC05NGNjLTQyYzgtYjcxNy1kYzM5MjA3ZjQwZDIiLCJjdXN0b21lcl9pZCI6MjMyOTcxLCJjdXN0b21lcl9jb2RlIjoiYjIxYWZiMWYtMWUxMC00ZDE3LWJmOGEtY2ViZDA3ZGFmNDBhIiwicHJlZmVycmVkX3VzZXJuYW1lIjoidXNlckBleGFtcGxlLmNvbSIsImV4cCI6OTk5OTk5OTk5OX0.signature",
+  "expires_in": 1800,
+  "refresh_expires_in": 2100,
+  "refresh_token": "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhNGIzZjdmZC05NGNjLTQyYzgtYjcxNy1kYzM5MjA3ZjQwZDIiLCJ0eXBlIjoicmVmcmVzaCIsImV4cCI6OTk5OTk5OTk5OX0.signature",
+  "token_type": "Bearer",
+  "scope": "openid profile kaizen-energy"
+}

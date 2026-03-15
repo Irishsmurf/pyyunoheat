@@ -1,0 +1,29 @@
+{
+  "objects": [
+    {
+      "id": 201411,
+      "code": "prop-uuid-001",
+      "status": "active",
+      "subscriptions": [
+        {
+          "id": 14582,
+          "code": "SUB_APARTMENT020CHAMBERSSQUARE_04801107_heat_GFW_730827456",
+          "name": "Apartment 020 Chambers Square - 04801107 - heat",
+          "status": "active",
+          "balance_group": { "id": 14583 }
+        }
+      ],
+      "services": [
+        {
+          "id": 8466,
+          "identifier": "04801107",
+          "service_type": {
+            "code": "HEAT_METER_READ_SERVICE",
+            "mandatory_fields": "identifier;time_of_read;meter_value_unit;reading_type;meter_value;session_id"
+          }
+        }
+      ]
+    }
+  ],
+  "total_num": 1
+}

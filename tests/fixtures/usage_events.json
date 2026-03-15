@@ -1,0 +1,41 @@
+{
+  "objects": [
+    {
+      "event_id": 17886462,
+      "event_code": "71006d18-abcd-1234-5678-000000000001",
+      "amount_with_discount": 1.306,
+      "quantity": 5.0,
+      "identifier": "04801107",
+      "created_at": 1773538684938,
+      "service_type": "HEAT_METER_READ_SERVICE",
+      "fields": {
+        "property": "GFW296",
+        "identifier": "04801107",
+        "session_id": "04801107-1773532800000",
+        "meter_value": "9809",
+        "reading_type": "A",
+        "time_of_read": "1773532800000",
+        "meter_value_unit": "kWh"
+      }
+    },
+    {
+      "event_id": 17886461,
+      "event_code": "71006d18-abcd-1234-5678-000000000002",
+      "amount_with_discount": 1.182,
+      "quantity": 4.0,
+      "identifier": "04801107",
+      "created_at": 1773452284938,
+      "service_type": "HEAT_METER_READ_SERVICE",
+      "fields": {
+        "property": "GFW296",
+        "identifier": "04801107",
+        "session_id": "04801107-1773446400000",
+        "meter_value": "9804",
+        "reading_type": "A",
+        "time_of_read": "1773446400000",
+        "meter_value_unit": "kWh"
+      }
+    }
+  ],
+  "total_num": 2
+}
