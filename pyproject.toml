@@ -29,6 +29,9 @@ dev = [
     "pytest>=8.0",
     "pytest-asyncio>=0.23",
     "aioresponses>=0.7.6",
+    # aioresponses 0.7.8 cannot mock aiohttp 3.14's ClientResponse
+    # (new required stream_writer argument); cap until aioresponses catches up
+    "aiohttp<3.14",
     "python-dotenv>=1.0",
     "ruff>=0.4",
 ]
