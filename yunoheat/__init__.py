@@ -1,9 +1,17 @@
 """pyyunoheat — async Python client for the Yuno Energy Heat API."""
 
+from yunoheat.auth import (
+    TokenData,
+    TokenStore,
+    FileTokenStore,
+    InMemoryTokenStore,
+)
 from yunoheat.client import YunoHeatClient
 from yunoheat.exceptions import (
+    APIConnectionError,
     APIError,
     AuthError,
+    ConfigEntryAuthFailed,
     EntityDiscoveryError,
     TokenExpiredError,
     YunoHeatError,
@@ -23,15 +31,22 @@ from yunoheat.models.consumption import (
     UsageReport,
 )
 
-__version__ = "0.1.1"
+__version__ = "0.2.0"
 
 __all__ = [
     "YunoHeatClient",
+    # auth
+    "TokenData",
+    "TokenStore",
+    "FileTokenStore",
+    "InMemoryTokenStore",
     # exceptions
     "YunoHeatError",
     "AuthError",
+    "ConfigEntryAuthFailed",
     "TokenExpiredError",
     "APIError",
+    "APIConnectionError",
     "EntityDiscoveryError",
     # account models
     "PersonCustomer",

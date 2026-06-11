@@ -10,14 +10,14 @@ from typing import Any, Literal
 
 import aiohttp
 
-from yunoheat.auth import load_tokens, login
+from yunoheat.auth import TokenData, TokenStore, FileTokenStore, login
 from yunoheat.connection import Connection
 from yunoheat.const import (
     HEAT_SERVICE_TYPE,
     REPORT_INTERVAL_DAY,
     RESOURCE_EURO,
 )
-from yunoheat.exceptions import AuthError, EntityDiscoveryError
+from yunoheat.exceptions import APIConnectionError, AuthError, EntityDiscoveryError
 from yunoheat.models.account import (
     EntityContext,
     PaymentGroupsResponse,
@@ -37,6 +37,10 @@ from yunoheat.models.consumption import (
 )
 
 _LOGGER = logging.getLogger(__name__)
+
+# Bootstrap timeout (seconds)
+BOOTSTRAP_TIMEOUT = 15
+BOOTSTRAP_REQUEST_TIMEOUT = 10
 
 
 class YunoHeatClient:
@@ -77,17 +81,48 @@ class YunoHeatClient:
         password: str,
         *,
         session: aiohttp.ClientSession | None = None,
+        token_store: TokenStore | None = None,
     ) -> YunoHeatClient:
-        """Authenticate with username/password, save tokens, and return a client.
+        """Authenticate with username/password and return a client.
 
         Entity discovery is deferred until the first data access.
+
+        Parameters
+        ----------
+        username:
+            Keycloak username (usually an email).
+        password:
+            Keycloak password.
+        session:
+            External aiohttp.ClientSession. If None, one is created and owned
+            by the client. External sessions are NEVER closed by the client.
+        token_store:
+            Pluggable token storage (file, memory, HA config entry, etc).
+            Defaults to file-based storage.
+
+        Returns
+        -------
+        YunoHeatClient
+            Authenticated client ready for API calls.
+
+        Raises
+        ------
+        ConfigEntryAuthFailed
+            If credentials are invalid.
+        AuthError
+            On network/Keycloak failures.
         """
         _session = session or aiohttp.ClientSession()
-        tokens = await login(_session, username, password)
-        conn = Connection(tokens, username=username, password=password, session=_session)
-        # Mark as owned only when we created the session
-        if session is None:
-            conn._session_owned = True
+        tokens = await login(
+            _session, username, password, token_store=token_store or FileTokenStore()
+        )
+        conn = Connection(
+            tokens,
+            username=username,
+            password=password,
+            session=_session,
+            token_store=token_store or FileTokenStore(),
+        )
         return cls(conn)
 
     @classmethod
@@ -95,19 +130,36 @@ class YunoHeatClient:
         cls,
         username: str | None = None,
         password: str | None = None,
+        token_store: TokenStore | None = None,
     ) -> YunoHeatClient:
-        """Load tokens from ``~/.config/yunoheat/tokens.json`` and return a client.
+        """Load tokens from the provided token_store and return a client.
 
-        Raises ``AuthError`` if no tokens are saved on disk.
-        If ``username``/``password`` are supplied they are stored on the
-        ``Connection`` for automatic re-login when the refresh token expires.
+        Parameters
+        ----------
+        username:
+            Optional; stored for automatic re-login when refresh token expires.
+        password:
+            Optional; stored for automatic re-login when refresh token expires.
+        token_store:
+            Pluggable token storage. Defaults to file-based storage.
+
+        Returns
+        -------
+        YunoHeatClient
+            Client authenticated with saved tokens.
+
+        Raises
+        ------
+        AuthError
+            If no tokens are saved in the token store.
         """
-        tokens = load_tokens()
+        store = token_store or FileTokenStore()
+        tokens = await store.load()
         if tokens is None:
-            raise AuthError(
-                "No saved tokens found. Call YunoHeatClient.login() first."
-            )
-        conn = Connection(tokens, username=username, password=password)
+            raise AuthError("No saved tokens found. Call YunoHeatClient.login() first.")
+        conn = Connection(
+            tokens, username=username, password=password, token_store=store
+        )
         return cls(conn)
 
     # ------------------------------------------------------------------
@@ -115,59 +167,92 @@ class YunoHeatClient:
     # ------------------------------------------------------------------
 
     async def _bootstrap(self) -> EntityContext:
-        """Run the 4-step entity discovery flow and cache the result."""
+        """Run the 4-step entity discovery flow with resilience and timeout handling.
+
+        Raises
+        ------
+        EntityDiscoveryError
+            If required API data is missing.
+        APIConnectionError
+            On network failures during bootstrap.
+        AuthError
+            If authentication fails during bootstrap.
+        """
         if self._context is not None:
             return self._context
 
-        # Step 1 — decode JWT claims (no signature verification needed)
-        claims = self._decode_jwt_claims(self._conn._tokens.access_token)
-        customer_id: int = int(claims["customer_id"])
-        customer_code: str = claims["customer_code"]
+        timeout = aiohttp.ClientTimeout(total=BOOTSTRAP_TIMEOUT)
+        request_timeout = aiohttp.ClientTimeout(total=BOOTSTRAP_REQUEST_TIMEOUT)
 
-        # Step 2 — fetch person customer (not strictly needed here but confirms reachability)
-        _LOGGER.debug("Bootstrap: fetching person customer %s", customer_code)
-        await self._conn.get(f"/customers/{customer_code}")
+        try:
+            # Step 1 — decode JWT claims (no signature verification needed)
+            claims = self._decode_jwt_claims(self._conn._tokens.access_token)
+            customer_id: int = int(claims.get("customer_id", 0))
+            customer_code: str = claims.get("customer_code", "")
 
-        # Step 3 — fetch payment group (links person → property)
-        _LOGGER.debug("Bootstrap: fetching payment groups for customer %d", customer_id)
-        groups_raw = await self._conn.get(
-            f"/customers/{customer_id}/groups", params={"type": "payment"}
-        )
-        groups = PaymentGroupsResponse.model_validate(groups_raw)
-        if not groups.objects:
-            raise EntityDiscoveryError(
-                f"No payment groups found for customer {customer_id}."
+            if not customer_id or not customer_code:
+                raise EntityDiscoveryError(
+                    "JWT claims missing customer_id or customer_code"
+                )
+
+            # Step 2 — fetch person customer (confirms API reachability)
+            _LOGGER.debug("Bootstrap: fetching person customer %s", customer_code)
+            await self._conn.get(
+                f"/customers/{customer_code}", timeout=request_timeout
             )
-        group = groups.objects[0]
-        payment_group_id = group.id
-        person_billing_profile_id: int | None = (
-            group.owner_billing_profile.get("id") if group.owner_billing_profile else None
-        )
 
-        # Step 4 — fetch property customer(s) via payment group
-        _LOGGER.debug("Bootstrap: fetching property customers for group %d", payment_group_id)
-        props_raw = await self._conn.get(
-            "/customers", params={"parent-group": payment_group_id}
-        )
-        props = PropertyCustomersResponse.model_validate(props_raw)
-        if not props.objects:
-            raise EntityDiscoveryError(
-                f"No property customers found for payment group {payment_group_id}."
+            # Step 3 — fetch payment group (links person → property)
+            _LOGGER.debug("Bootstrap: fetching payment groups for customer %d", customer_id)
+            groups_raw = await self._conn.get(
+                f"/customers/{customer_id}/groups",
+                params={"type": "payment"},
+                timeout=request_timeout,
             )
-        prop = props.objects[0]
+            groups = PaymentGroupsResponse.model_validate(groups_raw)
+            if not groups.objects:
+                raise EntityDiscoveryError(
+                    f"No payment groups found for customer {customer_id}."
+                )
+            group = groups.objects[0]
+            payment_group_id = group.id
+            person_billing_profile_id: int | None = (
+                group.owner_billing_profile.get("id")
+                if group.owner_billing_profile
+                else None
+            )
 
-        self._context = EntityContext(
-            person_customer_id=customer_id,
-            person_customer_code=customer_code,
-            person_billing_profile_id=person_billing_profile_id,
-            payment_group_id=payment_group_id,
-            property_customer_id=prop.id,
-            property_subscription_id=prop.subscription_id,
-            property_balance_group_id=prop.balance_group_id,
-            meter_identifier=prop.meter_identifier,
-        )
-        _LOGGER.debug("Bootstrap complete: %s", self._context)
-        return self._context
+            # Step 4 — fetch property customer(s) via payment group
+            _LOGGER.debug(
+                "Bootstrap: fetching property customers for group %d", payment_group_id
+            )
+            props_raw = await self._conn.get(
+                "/customers",
+                params={"parent-group": payment_group_id},
+                timeout=request_timeout,
+            )
+            props = PropertyCustomersResponse.model_validate(props_raw)
+            if not props.objects:
+                raise EntityDiscoveryError(
+                    f"No property customers found for payment group {payment_group_id}."
+                )
+            prop = props.objects[0]
+
+            self._context = EntityContext(
+                person_customer_id=customer_id,
+                person_customer_code=customer_code,
+                person_billing_profile_id=person_billing_profile_id,
+                payment_group_id=payment_group_id,
+                property_customer_id=prop.id,
+                property_subscription_id=prop.subscription_id,
+                property_balance_group_id=prop.balance_group_id,
+                meter_identifier=prop.meter_identifier,
+            )
+            _LOGGER.debug("Bootstrap complete: %s", self._context)
+            return self._context
+        except (AuthError, EntityDiscoveryError, APIConnectionError):
+            raise
+        except Exception as exc:
+            raise EntityDiscoveryError(f"Bootstrap failed: {exc}") from exc
 
     async def _ctx(self) -> EntityContext:
         """Return the cached entity context, bootstrapping if necessary."""
