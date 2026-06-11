@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.2] - 2026-06-11
+
+### Added
+
+- `YunoHeatClient.get_context()`: Public method to expose the resolved `EntityContext` (customer IDs, meter IDs), enabling Home Assistant integrations to populate device registries without re-running discovery
+- Added `session` parameter to `YunoHeatClient.from_saved_tokens()` to support external session injection when loading from a token store
+
 ## [0.2.1] - 2026-06-11
 
 ### Fixed
