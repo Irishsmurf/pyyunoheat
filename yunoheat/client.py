@@ -130,6 +130,8 @@ class YunoHeatClient:
         cls,
         username: str | None = None,
         password: str | None = None,
+        *,
+        session: aiohttp.ClientSession | None = None,
         token_store: TokenStore | None = None,
     ) -> YunoHeatClient:
         """Load tokens from the provided token_store and return a client.
@@ -140,6 +142,9 @@ class YunoHeatClient:
             Optional; stored for automatic re-login when refresh token expires.
         password:
             Optional; stored for automatic re-login when refresh token expires.
+        session:
+            External aiohttp.ClientSession. If None, one is created and owned
+            by the client. External sessions are NEVER closed by the client.
         token_store:
             Pluggable token storage. Defaults to file-based storage.
 
@@ -158,7 +163,11 @@ class YunoHeatClient:
         if tokens is None:
             raise AuthError("No saved tokens found. Call YunoHeatClient.login() first.")
         conn = Connection(
-            tokens, username=username, password=password, token_store=store
+            tokens,
+            username=username,
+            password=password,
+            session=session,
+            token_store=store,
         )
         return cls(conn)
 
@@ -429,6 +438,15 @@ class YunoHeatClient:
     # ------------------------------------------------------------------
     # Public API methods
     # ------------------------------------------------------------------
+
+    async def get_context(self) -> EntityContext:
+        """Return the resolved entity context, running discovery if needed.
+
+        Exposes the IDs cached by the bootstrap flow (customer IDs, payment
+        group, meter identifier) for consumers such as Home Assistant device
+        registries.
+        """
+        return await self._bootstrap()
 
     async def get_person_customer(self) -> PersonCustomer:
         """Return the person customer record."""
