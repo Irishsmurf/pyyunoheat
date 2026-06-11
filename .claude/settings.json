@@ -1,0 +1,42 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pip install:*)",
+      "Bash(python3.11 --version)",
+      "Bash(python3.12 --version)",
+      "Read(//usr/bin/**)",
+      "Read(//usr/local/bin/**)",
+      "Bash(python3.12 -m pip install -e \".[dev]\" -q)",
+      "Bash(python3.12 -m pytest tests/ -v)",
+      "Bash(python3.12 -m pytest tests/test_client_bootstrap.py tests/test_client_methods.py::test_get_usage_events tests/test_client_methods.py::test_get_invoices -v)",
+      "Bash(python3.12 -m pytest tests/test_client_bootstrap.py::test_bootstrap_resolves_entity_context -v -s)",
+      "Bash(python3.12 -m pytest tests/test_client_methods.py::test_get_usage_events tests/test_client_methods.py::test_get_invoices -v -s)",
+      "Bash(python3.12 -c \"import pytest_homeassistant_custom_component; print\\(pytest_homeassistant_custom_component.__file__\\)\")",
+      "Bash(python3.12 -m pytest --co -q tests/)",
+      "Bash(python3.12 -m pytest -p no:pytest_homeassistant_custom_component tests/test_connection.py -v -q)",
+      "Read(//home/paddez/dev/**)",
+      "Read(//home/paddez/**)",
+      "Bash(python3.12 -m pytest --fixtures)",
+      "Bash(python3.12 -m pytest --co tests/test_connection.py::test_get_success -q)",
+      "Bash(python3.12 -c \"import pkg_resources; [print\\(ep\\) for ep in pkg_resources.iter_entry_points\\(''''pytest11''''\\)]\")",
+      "Bash(python3.12 -m ruff check yunoheat tests)",
+      "Bash(python3.12 -m ruff check --fix yunoheat tests)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(python3.12 -m pytest tests/ -v --ignore=tests/integration)",
+      "Bash(python3.12 -m pytest tests/integration/ -v)",
+      "Bash(python3.12 -c \"import os; from dotenv import load_dotenv; load_dotenv\\(\\); print\\(bool\\(os.getenv\\(''YUNOHEAT_EMAIL''\\)\\), bool\\(os.getenv\\(''YUNOHEAT_PASSWORD''\\)\\)\\)\")",
+      "Bash(python3.12 -m pytest tests/integration/test_live_api.py::test_login_obtains_tokens -v)",
+      "Bash(python3.12 -c \"import aiodns; print\\(aiodns.__version__\\)\")",
+      "Bash(python3.12 -c \"import aiohttp; print\\(aiohttp.__version__\\)\")",
+      "Bash(python3.12 -c \"import pycares; print\\(pycares.__version__\\)\")",
+      "Bash(python3.12 -m pytest tests/integration/test_live_api.py::test_bootstrap_resolves_context tests/integration/test_live_api.py::test_get_invoices -v -s)",
+      "Bash(python3.12 -m pytest tests/integration/test_live_api.py::test_bootstrap_resolves_context -v -s)",
+      "Bash(python3.12 -:*)",
+      "Bash(python3.12 -m ruff check yunoheat tests --fix)",
+      "Bash(python3.12 -m pytest tests/ -v --tb=short)",
+      "Bash(git tag:*)",
+      "Bash(git push:*)"
+    ]
+  }
+}

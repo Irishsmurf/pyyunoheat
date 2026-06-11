@@ -101,12 +101,8 @@ async def test_post_success(valid_tokens) -> None:
 # ---------------------------------------------------------------------------
 
 
-async def test_token_refreshed_before_request(tmp_path, monkeypatch, expired_access_tokens) -> None:
+async def test_token_refreshed_before_request(expired_access_tokens) -> None:
     """Expired access token should trigger a silent refresh before the API call."""
-    import yunoheat.auth as auth_module
-
-    monkeypatch.setattr(auth_module, "_token_path", lambda: tmp_path / "tokens.json")
-
     new_token_resp = load_fixture("token_response")
     conn = make_conn(expired_access_tokens)
     try:
@@ -128,11 +124,7 @@ async def test_token_refreshed_before_request(tmp_path, monkeypatch, expired_acc
 # ---------------------------------------------------------------------------
 
 
-async def test_relogin_when_refresh_expired(tmp_path, monkeypatch, fully_expired_tokens) -> None:
-    import yunoheat.auth as auth_module
-
-    monkeypatch.setattr(auth_module, "_token_path", lambda: tmp_path / "tokens.json")
-
+async def test_relogin_when_refresh_expired(fully_expired_tokens) -> None:
     new_token_resp = load_fixture("token_response")
     conn = make_conn(
         fully_expired_tokens,

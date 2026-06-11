@@ -40,7 +40,8 @@ async def client():
     login only when no tokens exist. Credentials are kept on the Connection so
     the library can silently re-authenticate when the refresh token expires.
     """
-    if load_tokens() is not None:
+    tokens = await load_tokens()
+    if tokens is not None:
         c = await YunoHeatClient.from_saved_tokens(username=_EMAIL, password=_PASSWORD)
     else:
         c = await YunoHeatClient.login(_EMAIL, _PASSWORD)  # type: ignore[arg-type]

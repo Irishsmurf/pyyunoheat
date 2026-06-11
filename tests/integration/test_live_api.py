@@ -27,21 +27,20 @@ pytestmark = pytest.mark.skipif(
 # ---------------------------------------------------------------------------
 
 
-async def test_login_obtains_tokens(tmp_path, monkeypatch) -> None:
+async def test_login_obtains_tokens(tmp_path) -> None:
     """Fresh login should return valid tokens and persist them to disk."""
 
-    import yunoheat.auth as auth_module
-
-    token_file = tmp_path / "tokens.json"
-    monkeypatch.setattr(auth_module, "_token_path", lambda: token_file)
-
+    from yunoheat.auth import FileTokenStore
     from tests.integration.conftest import _EMAIL, _PASSWORD
 
-    client = await YunoHeatClient.login(_EMAIL, _PASSWORD)  # type: ignore[arg-type]
+    token_file = tmp_path / "tokens.json"
+    store = FileTokenStore(token_file)
+
+    client = await YunoHeatClient.login(_EMAIL, _PASSWORD, token_store=store)  # type: ignore[arg-type]
     await client.close()
 
     assert token_file.exists(), "tokens.json should have been written after login"
-    tokens = auth_module.load_tokens()
+    tokens = await store.load()
     assert tokens is not None
     assert tokens.access_is_valid()
     assert tokens.refresh_is_valid()

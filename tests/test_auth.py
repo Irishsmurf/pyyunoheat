@@ -10,6 +10,7 @@ from aioresponses import aioresponses
 
 from tests.conftest import load_fixture
 from yunoheat.auth import (
+    FileTokenStore,
     TokenData,
     get_valid_tokens,
     load_tokens,
@@ -106,13 +107,9 @@ def test_token_data_serialisation_roundtrip() -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_save_and_load_tokens(tmp_path, monkeypatch) -> None:
+def test_save_and_load_tokens(tmp_path) -> None:
     token_file = tmp_path / "tokens.json"
-
-    # Patch _token_path to use a temporary location
-    import yunoheat.auth as auth_module
-
-    monkeypatch.setattr(auth_module, "_token_path", lambda: token_file)
+    store = FileTokenStore(token_file)
 
     now = time.time()
     tokens = TokenData(
@@ -121,29 +118,30 @@ def test_save_and_load_tokens(tmp_path, monkeypatch) -> None:
         access_expires_at=now + 1800,
         refresh_expires_at=now + 2100,
     )
-    save_tokens(tokens)
+    # Use async version
+    import asyncio
+    asyncio.run(store.save(tokens))
     assert token_file.exists()
 
-    loaded = load_tokens()
+    loaded = asyncio.run(store.load())
     assert loaded is not None
     assert loaded.access_token == "access"
     assert loaded.refresh_token == "refresh"
 
 
-def test_load_tokens_missing_file(tmp_path, monkeypatch) -> None:
-    import yunoheat.auth as auth_module
+def test_load_tokens_missing_file(tmp_path) -> None:
+    token_file = tmp_path / "nonexistent.json"
+    store = FileTokenStore(token_file)
+    import asyncio
+    assert asyncio.run(store.load()) is None
 
-    monkeypatch.setattr(auth_module, "_token_path", lambda: tmp_path / "nonexistent.json")
-    assert load_tokens() is None
 
-
-def test_load_tokens_corrupt_file(tmp_path, monkeypatch) -> None:
-    import yunoheat.auth as auth_module
-
+def test_load_tokens_corrupt_file(tmp_path) -> None:
     token_file = tmp_path / "tokens.json"
     token_file.write_text("{ not valid json }")
-    monkeypatch.setattr(auth_module, "_token_path", lambda: token_file)
-    assert load_tokens() is None
+    store = FileTokenStore(token_file)
+    import asyncio
+    assert asyncio.run(store.load()) is None
 
 
 # ---------------------------------------------------------------------------
@@ -151,12 +149,11 @@ def test_load_tokens_corrupt_file(tmp_path, monkeypatch) -> None:
 # ---------------------------------------------------------------------------
 
 
-async def test_login_success(tmp_path, monkeypatch) -> None:
+async def test_login_success(tmp_path) -> None:
     import aiohttp
 
-    import yunoheat.auth as auth_module
-
-    monkeypatch.setattr(auth_module, "_token_path", lambda: tmp_path / "tokens.json")
+    token_file = tmp_path / "tokens.json"
+    store = FileTokenStore(token_file)
 
     resp_data = load_fixture("token_response")
     with aioresponses() as m:
@@ -171,18 +168,17 @@ async def test_login_success(tmp_path, monkeypatch) -> None:
         # Step 3: exchange code for tokens
         m.post(KEYCLOAK_TOKEN_URL, payload=resp_data, status=200)
         async with aiohttp.ClientSession() as session:
-            tokens = await login(session, "user@example.com", "password")
+            tokens = await login(session, "user@example.com", "password", token_store=store)
 
     assert tokens.access_token == resp_data["access_token"]
-    assert (tmp_path / "tokens.json").exists()
+    assert token_file.exists()
 
 
-async def test_login_bad_credentials(tmp_path, monkeypatch) -> None:
+async def test_login_bad_credentials(tmp_path) -> None:
     import aiohttp
 
-    import yunoheat.auth as auth_module
-
-    monkeypatch.setattr(auth_module, "_token_path", lambda: tmp_path / "tokens.json")
+    token_file = tmp_path / "tokens.json"
+    store = FileTokenStore(token_file)
 
     with aioresponses() as m:
         # Step 1: GET login page succeeds
@@ -194,11 +190,12 @@ async def test_login_bad_credentials(tmp_path, monkeypatch) -> None:
         # Step 2: POST credentials → 200 (Keycloak returns login page with error)
         m.post(_FORM_ACTION, status=200, body="<html>Invalid username or password.</html>")
         async with aiohttp.ClientSession() as session:
-            with pytest.raises(AuthError) as exc_info:
-                await login(session, "user@example.com", "wrongpassword")
+            from yunoheat.exceptions import ConfigEntryAuthFailed
+            with pytest.raises(ConfigEntryAuthFailed) as exc_info:
+                await login(session, "user@example.com", "wrongpassword", token_store=store)
 
     # Keycloak returns 200 (login page with error) instead of a redirect,
-    # so the auth code flow raises AuthError about the unexpected status.
+    # so the auth code flow raises ConfigEntryAuthFailed about the unexpected status.
     assert "200" in str(exc_info.value)
 
 
@@ -207,18 +204,17 @@ async def test_login_bad_credentials(tmp_path, monkeypatch) -> None:
 # ---------------------------------------------------------------------------
 
 
-async def test_refresh_success(tmp_path, monkeypatch, expired_access_tokens) -> None:
+async def test_refresh_success(tmp_path, expired_access_tokens) -> None:
     import aiohttp
 
-    import yunoheat.auth as auth_module
-
-    monkeypatch.setattr(auth_module, "_token_path", lambda: tmp_path / "tokens.json")
+    token_file = tmp_path / "tokens.json"
+    store = FileTokenStore(token_file)
 
     resp_data = load_fixture("token_response")
     with aioresponses() as m:
         m.post(KEYCLOAK_TOKEN_URL, payload=resp_data, status=200)
         async with aiohttp.ClientSession() as session:
-            new_tokens = await refresh(session, expired_access_tokens)
+            new_tokens = await refresh(session, expired_access_tokens, token_store=store)
 
     assert new_tokens.access_token == resp_data["access_token"]
 
@@ -248,19 +244,18 @@ async def test_get_valid_tokens_access_still_valid(valid_tokens) -> None:
 
 
 async def test_get_valid_tokens_access_expired_refresh_valid(
-    tmp_path, monkeypatch, expired_access_tokens
+    tmp_path, expired_access_tokens
 ) -> None:
     import aiohttp
 
-    import yunoheat.auth as auth_module
-
-    monkeypatch.setattr(auth_module, "_token_path", lambda: tmp_path / "tokens.json")
+    token_file = tmp_path / "tokens.json"
+    store = FileTokenStore(token_file)
 
     resp_data = load_fixture("token_response")
     with aioresponses() as m:
         m.post(KEYCLOAK_TOKEN_URL, payload=resp_data, status=200)
         async with aiohttp.ClientSession() as session:
-            result = await get_valid_tokens(session, expired_access_tokens)
+            result = await get_valid_tokens(session, expired_access_tokens, token_store=store)
 
     assert result.access_token == resp_data["access_token"]
 
