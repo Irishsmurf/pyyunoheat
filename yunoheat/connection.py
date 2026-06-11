@@ -2,21 +2,25 @@
 
 from __future__ import annotations
 
-import asyncio
 import logging
 from typing import Any
 
 import aiohttp
 
 from yunoheat.auth import (
+    FileTokenStore,
     TokenData,
     TokenStore,
-    FileTokenStore,
     get_valid_tokens,
     login,
 )
 from yunoheat.const import API_BASE_URL
-from yunoheat.exceptions import APIError, APIConnectionError, AuthError, TokenExpiredError
+from yunoheat.exceptions import (
+    APIConnectionError,
+    APIError,
+    AuthError,
+    TokenExpiredError,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -133,7 +137,7 @@ class Connection:
                         body = "<unreadable response>"
                     raise APIError(body, status=resp.status)
                 return await resp.json(content_type=None)
-        except asyncio.TimeoutError as exc:
+        except TimeoutError as exc:
             raise APIConnectionError(f"Request timeout: {method} {url}") from exc
         except aiohttp.ClientConnectorError as exc:
             raise APIConnectionError(f"Connection failed: {method} {url}") from exc

@@ -1,10 +1,10 @@
 """pyyunoheat — async Python client for the Yuno Energy Heat API."""
 
 from yunoheat.auth import (
-    TokenData,
-    TokenStore,
     FileTokenStore,
     InMemoryTokenStore,
+    TokenData,
+    TokenStore,
 )
 from yunoheat.client import YunoHeatClient
 from yunoheat.exceptions import (

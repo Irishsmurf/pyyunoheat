@@ -10,7 +10,7 @@ from typing import Any, Literal
 
 import aiohttp
 
-from yunoheat.auth import TokenData, TokenStore, FileTokenStore, login
+from yunoheat.auth import FileTokenStore, TokenStore, login
 from yunoheat.connection import Connection
 from yunoheat.const import (
     HEAT_SERVICE_TYPE,
@@ -181,7 +181,6 @@ class YunoHeatClient:
         if self._context is not None:
             return self._context
 
-        timeout = aiohttp.ClientTimeout(total=BOOTSTRAP_TIMEOUT)
         request_timeout = aiohttp.ClientTimeout(total=BOOTSTRAP_REQUEST_TIMEOUT)
 
         try:
