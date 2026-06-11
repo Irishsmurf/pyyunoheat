@@ -8,6 +8,7 @@ import pytest
 from aioresponses import aioresponses
 
 from tests.conftest import load_fixture
+from yunoheat.auth import InMemoryTokenStore
 from yunoheat.client import YunoHeatClient
 from yunoheat.connection import Connection
 from yunoheat.const import API_BASE_URL
@@ -22,7 +23,8 @@ _RE_CUSTOMERS_ROOT = re.compile(rf"{re.escape(API_BASE_URL)}/customers\?.*")
 
 
 def make_client(valid_tokens) -> YunoHeatClient:
-    conn = Connection(valid_tokens)
+    # In-memory store keeps tests from writing to the real token file in ~/.config
+    conn = Connection(valid_tokens, token_store=InMemoryTokenStore())
     return YunoHeatClient(conn)
 
 

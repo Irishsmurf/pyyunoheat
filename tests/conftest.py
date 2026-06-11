@@ -9,7 +9,7 @@ from typing import Any
 
 import pytest
 
-from yunoheat.auth import TokenData
+from yunoheat.auth import InMemoryTokenStore, TokenData
 from yunoheat.connection import Connection
 
 # ---------------------------------------------------------------------------
@@ -81,5 +81,9 @@ def fully_expired_tokens() -> TokenData:
 # ---------------------------------------------------------------------------
 
 def make_connection(tokens: TokenData) -> Connection:
-    """Create a Connection with the given tokens (no stored credentials)."""
-    return Connection(tokens)
+    """Create a Connection with the given tokens (no stored credentials).
+
+    Uses an in-memory token store so tests never touch the real token file
+    in ~/.config/yunoheat/.
+    """
+    return Connection(tokens, token_store=InMemoryTokenStore())

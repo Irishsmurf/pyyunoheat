@@ -49,7 +49,10 @@ async def test_login_obtains_tokens(tmp_path) -> None:
 async def test_from_saved_tokens(client: YunoHeatClient) -> None:
     """Loading saved tokens should produce a working client without re-logging in."""
     # The `client` fixture already called from_saved_tokens or login.
-    # Confirm the connection holds a valid access token.
+    # Asking for the auth header refreshes the access token if needed;
+    # afterwards the connection must hold a valid access token.
+    header = await client._conn._get_auth_header()
+    assert header.startswith("Bearer ")
     assert client._conn._tokens.access_is_valid()
 
 

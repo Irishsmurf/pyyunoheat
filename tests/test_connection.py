@@ -9,7 +9,7 @@ from aioresponses import aioresponses
 
 from tests.conftest import load_fixture
 from tests.test_auth import _FAKE_LOGIN_HTML, _FAKE_REDIRECT, _FORM_ACTION
-from yunoheat.auth import TokenData
+from yunoheat.auth import InMemoryTokenStore, TokenData
 from yunoheat.connection import Connection
 from yunoheat.const import API_BASE_URL, KEYCLOAK_AUTH_URL, KEYCLOAK_TOKEN_URL
 from yunoheat.exceptions import APIError, AuthError
@@ -20,6 +20,8 @@ from yunoheat.exceptions import APIError, AuthError
 
 
 def make_conn(tokens: TokenData, **kwargs) -> Connection:
+    # In-memory store keeps tests from writing to the real token file in ~/.config
+    kwargs.setdefault("token_store", InMemoryTokenStore())
     return Connection(tokens, **kwargs)
 
 
@@ -157,6 +159,6 @@ async def test_relogin_when_refresh_expired(fully_expired_tokens) -> None:
 async def test_context_manager(valid_tokens) -> None:
     with aioresponses() as m:
         m.get(f"{API_BASE_URL}/site", payload={"id": 142})
-        async with Connection(valid_tokens) as conn:
+        async with make_conn(valid_tokens) as conn:
             result = await conn.get("/site")
     assert result == {"id": 142}

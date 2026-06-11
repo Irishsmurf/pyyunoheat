@@ -41,7 +41,7 @@ async def client():
     the library can silently re-authenticate when the refresh token expires.
     """
     tokens = await load_tokens()
-    if tokens is not None:
+    if tokens is not None and (tokens.access_is_valid() or tokens.refresh_is_valid()):
         c = await YunoHeatClient.from_saved_tokens(username=_EMAIL, password=_PASSWORD)
     else:
         c = await YunoHeatClient.login(_EMAIL, _PASSWORD)  # type: ignore[arg-type]
