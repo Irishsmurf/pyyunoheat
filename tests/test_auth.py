@@ -13,13 +13,11 @@ from yunoheat.auth import (
     FileTokenStore,
     TokenData,
     get_valid_tokens,
-    load_tokens,
     login,
     refresh,
-    save_tokens,
 )
 from yunoheat.const import KEYCLOAK_AUTH_URL, KEYCLOAK_TOKEN_URL
-from yunoheat.exceptions import AuthError, TokenExpiredError
+from yunoheat.exceptions import TokenExpiredError
 
 # ---------------------------------------------------------------------------
 # Login flow helpers

@@ -30,8 +30,8 @@ pytestmark = pytest.mark.skipif(
 async def test_login_obtains_tokens(tmp_path) -> None:
     """Fresh login should return valid tokens and persist them to disk."""
 
-    from yunoheat.auth import FileTokenStore
     from tests.integration.conftest import _EMAIL, _PASSWORD
+    from yunoheat.auth import FileTokenStore
 
     token_file = tmp_path / "tokens.json"
     store = FileTokenStore(token_file)
