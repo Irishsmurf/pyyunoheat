@@ -127,6 +127,11 @@ asyncio.run(main())
 
 ### `YunoHeatClient`
 
+| Factory | Returns | Description |
+|---------|---------|-------------|
+| `login(username, password, *, token_store=None, session=None)` | `YunoHeatClient` | Authenticate and create client |
+| `from_saved_tokens(username, password, *, token_store=None, session=None)` | `YunoHeatClient` | Load saved tokens and create client |
+
 | Method | Returns | Description |
 |--------|---------|-------------|
 | `get_open_bill_due()` | `OpenBillDue` | Current outstanding balance (EUR) |
@@ -152,8 +157,90 @@ asyncio.run(main())
 - `kwh` — kWh consumed
 - `eur` — EUR cost
 
+## Advanced usage
+
+### Custom token storage
+
+By default, tokens are persisted to `~/.config/yunoheat/tokens.json`. For Home Assistant or other custom scenarios, you can provide your own `TokenStore`:
+
+```python
+from yunoheat import YunoHeatClient, TokenStore, TokenData
+import json
+
+class CustomTokenStore(TokenStore):
+    """Example: store tokens in a dict or database."""
+    
+    async def load(self) -> TokenData | None:
+        """Load stored tokens, or None if missing."""
+        # e.g., read from database, config store, etc.
+        return None
+    
+    async def save(self, tokens: TokenData) -> None:
+        """Persist tokens."""
+        # e.g., write to database, config store, etc.
+        pass
+
+# Use custom store
+store = CustomTokenStore()
+client = await YunoHeatClient.login(
+    "you@example.com", 
+    "password",
+    token_store=store,
+)
+```
+
+### External aiohttp session
+
+For Home Assistant integrations, you can provide an external `aiohttp.ClientSession` to share it across the application:
+
+```python
+import aiohttp
+from yunoheat import YunoHeatClient
+
+async with aiohttp.ClientSession() as session:
+    client = await YunoHeatClient.login(
+        "you@example.com",
+        "password",
+        session=session,
+    )
+    # The client uses your session; it won't be closed when client closes
+    balance = await client.get_open_bill_due()
+    # Session remains open for other tasks
+```
+
+### Exception handling
+
+The library raises specific exception types for different error scenarios:
+
+```python
+from yunoheat import (
+    YunoHeatClient,
+    ConfigEntryAuthFailed,  # Invalid credentials; user must re-authenticate
+    AuthError,              # Token refresh failed; may be transient
+    TokenExpiredError,      # Refresh token expired; requires full login
+    APIConnectionError,     # Network error; may be transient
+    APIError,               # API returned 4xx/5xx error
+    EntityDiscoveryError,   # Bootstrap failed (entity context resolution)
+)
+
+async def safe_login(username: str, password: str):
+    try:
+        return await YunoHeatClient.login(username, password)
+    except ConfigEntryAuthFailed:
+        print("Invalid credentials. Please check your username and password.")
+        raise
+    except AuthError as e:
+        print(f"Auth error (may be transient): {e}")
+        raise
+    except APIConnectionError as e:
+        print(f"Network error: {e}")
+        raise
+```
+
 ## Notes
 
-- Tokens are stored at `~/.config/yunoheat/tokens.json` with mode `0600`. Access tokens expire after 30 minutes; the library refreshes them automatically.
-- All timestamps are UTC. Monetary values are EUR. Energy values are kWh.
-- The underlying API is the Tridens Monetization self-care platform at `app.tridenstechnology.com`.
+- **Token storage**: Tokens are persisted to `~/.config/yunoheat/tokens.json` by default (mode `0600`). Use a custom `TokenStore` to store tokens elsewhere (e.g., Home Assistant config entry storage).
+- **Token refresh**: Access tokens expire after 30 minutes. The library refreshes them automatically on demand.
+- **Session ownership**: If you provide an external `aiohttp.ClientSession`, the library will not close it. If the library creates its own session, it will be closed on `await client.close()`.
+- **Timestamps**: All times are UTC. Monetary values are EUR. Energy values are kWh.
+- **API endpoint**: The underlying API is the Tridens Monetization self-care platform at `app.tridenstechnology.com`.
