@@ -5,7 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.2.0] - 2024-06-11
+## [0.2.1] - 2026-06-11
+
+### Fixed
+
+- Unit tests no longer write fake tokens to the real `~/.config/yunoheat/tokens.json`;
+  test Connections now use `InMemoryTokenStore`
+- Integration test fixture falls back to a fresh login when saved tokens are fully
+  expired, and `test_from_saved_tokens` exercises the token refresh path instead of
+  asserting on raw loaded state
+- Capped `aiohttp<3.14` in the dev extra: aioresponses 0.7.8 cannot mock aiohttp
+  3.14's `ClientResponse` (new required `stream_writer` argument). Runtime
+  requirement remains `aiohttp>=3.9`
+
+## [0.2.0] - 2026-06-11
 
 ### Major Changes (Production-Grade Refactoring for Home Assistant)
 
