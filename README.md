@@ -61,6 +61,7 @@ asyncio.run(main())
 ### 2. Daily usage report for the current month
 
 ```python
+import asyncio
 from datetime import datetime, UTC
 from yunoheat import YunoHeatClient
 
@@ -87,7 +88,7 @@ asyncio.run(main())
 By default, the client persists authentication tokens to `~/.config/yunoheat/tokens.json`. You can easily implement a custom `TokenStore` to save tokens elsewhere (e.g. database, secure vault, or Home Assistant configuration entry):
 
 ```python
-from pyyunoheat import YunoHeatClient, TokenStore, TokenData
+from yunoheat import YunoHeatClient, TokenStore, TokenData
 
 class CustomTokenStore(TokenStore):
     async def load(self) -> TokenData | None:

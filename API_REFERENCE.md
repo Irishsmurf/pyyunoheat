@@ -17,7 +17,7 @@ client = await YunoHeatClient.from_saved_tokens()
 Use the new pluggable architecture:
 
 ```python
-from pyyunoheat import YunoHeatClient, TokenData
+from yunoheat import YunoHeatClient, TokenData
 
 # 1. Create a token store (HA wraps config entry)
 class HATokenStore:
@@ -82,7 +82,7 @@ YunoHeatError (base)
 
 ```python
 from typing import Protocol
-from pyyunoheat import TokenData
+from yunoheat import TokenData
 
 class TokenStore(Protocol):
     """Pluggable token storage."""
@@ -96,7 +96,7 @@ class TokenStore(Protocol):
         ...
 
 # Built-in implementations
-from pyyunoheat import FileTokenStore, InMemoryTokenStore
+from yunoheat import FileTokenStore, InMemoryTokenStore
 
 # File-based (default, backward-compatible)
 store = FileTokenStore()  # Uses ~/.config/yunoheat/tokens.json
@@ -121,7 +121,7 @@ class CustomStore:
 ## TokenData Structure
 
 ```python
-from pyyunoheat import TokenData
+from yunoheat import TokenData
 from dataclasses import asdict
 
 tokens = TokenData(
@@ -155,7 +155,7 @@ data = asdict(tokens)
 ### `YunoHeatClient.login()`
 
 ```python
-from pyyunoheat import YunoHeatClient, TokenStore
+from yunoheat import YunoHeatClient, TokenStore
 import aiohttp
 
 client = await YunoHeatClient.login(
@@ -219,7 +219,7 @@ client = await YunoHeatClient.from_saved_tokens(
 ## Connection Lifecycle
 
 ```python
-from pyyunoheat import YunoHeatClient
+from yunoheat import YunoHeatClient
 
 # Automatic cleanup with context manager
 async with await YunoHeatClient.login(...) as client:
@@ -251,7 +251,7 @@ await session.close()  # You must close it
 ## Bootstrap & Entity Context
 
 ```python
-from pyyunoheat import EntityContext
+from yunoheat import EntityContext
 
 # Automatic on first API call
 ctx = await client._ctx()  # Triggers bootstrap if needed
@@ -327,7 +327,7 @@ bill = await client.get_bill(bill_id=123)
 
 ```python
 import pytest
-from pyyunoheat import InMemoryTokenStore, TokenData, YunoHeatClient
+from yunoheat import InMemoryTokenStore, TokenData, YunoHeatClient
 
 @pytest.mark.asyncio
 async def test_client_with_custom_store():

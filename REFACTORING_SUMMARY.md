@@ -263,7 +263,7 @@ async def client(connection):
 ```python
 # custom_components/my_yuno/config_flow.py
 from homeassistant.config_entries import ConfigEntry
-from pyyunoheat import YunoHeatClient, InMemoryTokenStore, ConfigEntryAuthFailed
+from yunoheat import YunoHeatClient, InMemoryTokenStore, ConfigEntryAuthFailed
 
 class HATokenStore:
     """Wraps HA's config entry for token persistence."""

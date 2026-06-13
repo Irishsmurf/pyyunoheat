@@ -70,7 +70,7 @@ In custom environments (like Home Assistant, database-backed apps, or daemon pro
 
 ```python
 from typing import Protocol
-from pyyunoheat import TokenData
+from yunoheat import TokenData
 
 class TokenStore(Protocol):
     async def load(self) -> TokenData | None:
@@ -87,7 +87,7 @@ class TokenStore(Protocol):
 Here is an example wrapping a database or a simple custom storage:
 
 ```python
-from pyyunoheat import YunoHeatClient, TokenStore, TokenData
+from yunoheat import YunoHeatClient, TokenStore, TokenData
 
 class DatabaseTokenStore(TokenStore):
     def __init__(self, db_connection, user_id):

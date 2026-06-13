@@ -33,7 +33,7 @@ from homeassistant import config_entries
 from homeassistant.const import CONF_PASSWORD, CONF_USERNAME
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
-from pyyunoheat import (
+from yunoheat import (
     ConfigEntryAuthFailed,
     InMemoryTokenStore,
     TokenData,
@@ -118,7 +118,7 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING
 
-from pyyunoheat import TokenData, TokenStore
+from yunoheat import TokenData, TokenStore
 
 if TYPE_CHECKING:
     from homeassistant.config_entries import ConfigEntry
@@ -173,7 +173,7 @@ from homeassistant.helpers.update_coordinator import (
     DataUpdateCoordinator,
     UpdateFailed,
 )
-from pyyunoheat import (
+from yunoheat import (
     APIConnectionError,
     APIError,
     AuthError,
@@ -437,7 +437,7 @@ except (APIConnectionError, APIError):
 """Test the coordinator."""
 from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
-from pyyunoheat import InMemoryTokenStore, TokenData, YunoHeatClient
+from yunoheat import InMemoryTokenStore, TokenData, YunoHeatClient
 
 @pytest.mark.asyncio
 async def test_coordinator_fetch_data():
