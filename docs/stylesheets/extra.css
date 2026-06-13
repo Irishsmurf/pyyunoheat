@@ -114,3 +114,29 @@
   border-bottom-color: var(--brand-peach);
   border-bottom-style: solid;
 }
+
+/* Make Mermaid diagrams legible and horizontally scrollable instead of shrinking */
+.mermaid {
+  display: block;
+  width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  background-color: var(--md-code-bg-color, #f8f9fa);
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  margin-bottom: 1.5rem;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.mermaid svg {
+  max-width: none !important;
+  height: auto !important;
+  display: block;
+  margin: 0 auto;
+}
+
+[data-md-color-scheme="slate"] .mermaid {
+  background-color: #1e2030;
+  border-color: rgba(255, 255, 255, 0.05);
+}
