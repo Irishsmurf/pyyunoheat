@@ -1,5 +1,9 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/Irishsmurf/pyyunoheat/main/docs/assets/logo.svg" alt="pyyunoheat logo" width="550">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/Irishsmurf/pyyunoheat/main/docs/assets/logo-docs.svg">
+    <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/Irishsmurf/pyyunoheat/main/docs/assets/logo.svg">
+    <img alt="pyyunoheat logo" src="https://raw.githubusercontent.com/Irishsmurf/pyyunoheat/main/docs/assets/logo.svg" width="550">
+  </picture>
 </p>
 
 <p align="center">
