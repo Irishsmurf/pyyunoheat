@@ -1,7 +1,7 @@
 # pyyunoheat
 
 <div class="hero-banner">
-  <h1>pyyunoheat</h1>
+  <img src="assets/logo-docs.svg" alt="pyyunoheat logo" width="500" style="margin-bottom: 0.5rem; max-width: 100%; height: auto;">
   <p>An elegant, async Python client for the Yuno Energy Heat API, designed for home automation, telemetry tracking, and custom integrations.</p>
 </div>
 
