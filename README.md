@@ -12,6 +12,7 @@
 
 <p align="center">
   <a href="https://pypi.org/project/pyyunoheat/"><img src="https://img.shields.io/pypi/v/pyyunoheat.svg?color=3C79EE" alt="PyPI version"></a>
+  <a href="https://Irishsmurf.github.io/pyyunoheat/"><img src="https://img.shields.io/badge/docs-GitHub%20Pages-3C79EE.svg" alt="Documentation"></a>
   <a href="https://pypi.org/project/pyyunoheat/"><img src="https://img.shields.io/pypi/pyversions/pyyunoheat.svg?color=5C3FD6" alt="Supported Python versions"></a>
   <a href="https://github.com/Irishsmurf/pyyunoheat/blob/main/LICENSE"><img src="https://img.shields.io/github/license/Irishsmurf/pyyunoheat.svg?color=20D5DF" alt="License"></a>
 </p>
