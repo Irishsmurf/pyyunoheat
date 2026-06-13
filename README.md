@@ -1,18 +1,50 @@
-# pyyunoheat
+<p align="center">
+  <img src="https://raw.githubusercontent.com/Irishsmurf/pyyunoheat/main/docs/assets/logo.svg" alt="pyyunoheat logo" width="550">
+</p>
 
-Async Python client for the **Yuno Energy Heat** API (formerly Kaizen Energy), a communal heating scheme operating across apartment developments in Ireland.
+<p align="center">
+  <strong>An elegant, async-first Python client for the Yuno Energy Heat API.</strong>
+</p>
 
-The API runs on the Tridens Monetization platform. This library handles authentication, entity discovery, and data access with no browser or scraping required.
+<p align="center">
+  <a href="https://pypi.org/project/pyyunoheat/"><img src="https://img.shields.io/pypi/v/pyyunoheat.svg?color=3C79EE" alt="PyPI version"></a>
+  <a href="https://pypi.org/project/pyyunoheat/"><img src="https://img.shields.io/pypi/pyversions/pyyunoheat.svg?color=5C3FD6" alt="Supported Python versions"></a>
+  <a href="https://github.com/Irishsmurf/pyyunoheat/blob/main/LICENSE"><img src="https://img.shields.io/github/license/Irishsmurf/pyyunoheat.svg?color=20D5DF" alt="License"></a>
+</p>
+
+---
+
+**pyyunoheat** is an async Python client for the **Yuno Energy Heat** API (formerly Kaizen Energy), a communal heating scheme operating across apartment developments in Ireland. 
+
+The underlying API runs on the Tridens Monetization self-care platform. This library handles OAuth2/Keycloak authentication, dual-tier entity discovery, and telemetry data access with no browser automation or scraping required.
+
+📖 **Full Documentation**: [https://Irishsmurf.github.io/pyyunoheat/](https://Irishsmurf.github.io/pyyunoheat/)
+
+---
+
+## Key Features
+
+* **Async-First**: Built on top of `aiohttp` for efficient, non-blocking network calls.
+* **Dual-Tier Discovery**: Automatically bootstraps the Tridens customer hierarchy (Person Account ➔ Payment Group ➔ Property Account ➔ Heat Meter Subscriptions) to retrieve entity identifiers.
+* **Flexible Storage**: Support for pluggable token stores, allowing you to easily inject secure database backends or Home Assistant configuration storage.
+* **Consumption Telemetry**: Fetch daily, weekly, or monthly usage reports with energy (kWh) and monetary cost (EUR) breakdowns.
+* **Robust Exceptions**: Standardized error classes extending `YunoHeatError` for clean error recovery.
+
+---
 
 ## Installation
+
+Install via pip:
 
 ```bash
 pip install pyyunoheat
 ```
 
-## Quick start
+---
 
-### Check your current balance
+## Quick Start
+
+### 1. Check your outstanding balance
 
 ```python
 import asyncio
@@ -26,40 +58,7 @@ async def main():
 asyncio.run(main())
 ```
 
-```
-Outstanding balance: €87.83
-```
-
-### View this week's meter readings
-
-```python
-from datetime import datetime, timedelta, UTC
-from yunoheat import YunoHeatClient
-
-async def main():
-    async with await YunoHeatClient.login("you@example.com", "password") as client:
-        now = datetime.now(UTC)
-        events = await client.get_usage_events(
-            date_from=now - timedelta(days=7),
-            date_to=now,
-        )
-        for e in events.objects:
-            print(
-                f"{e.fields.time_of_read_dt:%Y-%m-%d}  "
-                f"{e.quantity:5.1f} kWh  "
-                f"€{e.amount_with_discount:.3f}"
-            )
-
-asyncio.run(main())
-```
-
-```
-2026-03-14   5.0 kWh  €1.306
-2026-03-13   4.0 kWh  €1.182
-2026-03-12   6.0 kWh  €1.430
-```
-
-### Daily usage report for the current month
+### 2. Daily usage report for the current month
 
 ```python
 from datetime import datetime, UTC
@@ -72,115 +71,32 @@ async def main():
     async with await YunoHeatClient.login("you@example.com", "password") as client:
         report = await client.get_usage_report(date_from=month_start, date_to=today)
 
-    total_kwh = sum(r.kwh for r in report.readings)
-    total_eur = sum(r.eur for r in report.readings)
-
     print(f"{'Date':<12} {'kWh':>6}  {'Cost':>7}")
     print("-" * 28)
     for r in report.readings:
         if r.kwh > 0:
             print(f"{r.date:%Y-%m-%d}  {r.kwh:6.1f}  €{r.eur:6.3f}")
-    print("-" * 28)
-    print(f"{'Total':<12} {total_kwh:6.1f}  €{total_eur:6.3f}")
 
 asyncio.run(main())
 ```
 
-```
-Date          kWh     Cost
-----------------------------
-2026-03-01    3.0  € 0.372
-2026-03-02    4.0  € 1.182
-2026-03-03    5.0  € 1.306
-...
-2026-03-14    5.0  € 1.306
-----------------------------
-Total        58.0  €15.834
-```
+---
 
-### Re-use saved tokens (skip re-login)
+## Pluggable Token Storage
 
-After the first `login()` call, tokens are saved to `~/.config/yunoheat/tokens.json`. On subsequent runs you can load them directly:
+By default, the client persists authentication tokens to `~/.config/yunoheat/tokens.json`. You can easily implement a custom `TokenStore` to save tokens elsewhere (e.g. database, secure vault, or Home Assistant configuration entry):
 
 ```python
-from yunoheat import YunoHeatClient, TokenExpiredError
-
-async def main():
-    try:
-        # Loads saved tokens; pass credentials for silent re-login on expiry
-        client = await YunoHeatClient.from_saved_tokens(
-            username="you@example.com",
-            password="password",
-        )
-    except TokenExpiredError:
-        # Tokens missing or too old — fall back to full login
-        client = await YunoHeatClient.login("you@example.com", "password")
-
-    async with client:
-        balance = await client.get_open_bill_due()
-        print(f"€{balance.open_bill_due:.2f}")
-
-asyncio.run(main())
-```
-
-## API reference
-
-### `YunoHeatClient`
-
-| Factory | Returns | Description |
-|---------|---------|-------------|
-| `login(username, password, *, token_store=None, session=None)` | `YunoHeatClient` | Authenticate and create client |
-| `from_saved_tokens(username, password, *, token_store=None, session=None)` | `YunoHeatClient` | Load saved tokens and create client |
-
-| Method | Returns | Description |
-|--------|---------|-------------|
-| `get_open_bill_due()` | `OpenBillDue` | Current outstanding balance (EUR) |
-| `get_usage_events(date_from, date_to, ...)` | `UsageEventsResponse` | Paginated meter readings |
-| `get_usage_report(date_from, date_to, interval)` | `UsageReport` | Aggregated kWh + EUR by day/week/month |
-| `get_person_customer()` | `PersonCustomer` | Account and contact details |
-| `get_invoices(date_from, date_to, ...)` | `InvoicesResponse` | Paginated invoices |
-| `get_bill(bill_id)` | `Bill` | Single bill by ID |
-| `get_credit_balances()` | `CreditBalancesResponse` | Credit balance on account |
-
-`get_usage_report` accepts `interval` values: `"day"` (default), `"week"`, `"month"`, `"quarter"`, `"year"`.
-
-### Key model fields
-
-**`UsageEvent`**
-- `quantity` — kWh consumed in this period
-- `amount_with_discount` — EUR cost
-- `fields.time_of_read_dt` — UTC datetime of the reading
-- `fields.meter_value_kwh` — cumulative meter reading (kWh)
-
-**`DailyReading`** (from `UsageReport.readings`)
-- `date` — UTC datetime of the bucket start
-- `kwh` — kWh consumed
-- `eur` — EUR cost
-
-## Advanced usage
-
-### Custom token storage
-
-By default, tokens are persisted to `~/.config/yunoheat/tokens.json`. For Home Assistant or other custom scenarios, you can provide your own `TokenStore`:
-
-```python
-from yunoheat import YunoHeatClient, TokenStore, TokenData
-import json
+from pyyunoheat import YunoHeatClient, TokenStore, TokenData
 
 class CustomTokenStore(TokenStore):
-    """Example: store tokens in a dict or database."""
-    
     async def load(self) -> TokenData | None:
-        """Load stored tokens, or None if missing."""
-        # e.g., read from database, config store, etc.
-        return None
-    
+        # Load tokens from database/store
+        ...
     async def save(self, tokens: TokenData) -> None:
-        """Persist tokens."""
-        # e.g., write to database, config store, etc.
-        pass
+        # Save tokens to database/store
+        ...
 
-# Use custom store
 store = CustomTokenStore()
 client = await YunoHeatClient.login(
     "you@example.com", 
@@ -189,58 +105,43 @@ client = await YunoHeatClient.login(
 )
 ```
 
-### External aiohttp session
+---
 
-For Home Assistant integrations, you can provide an external `aiohttp.ClientSession` to share it across the application:
+## API Reference Overview
 
-```python
-import aiohttp
-from yunoheat import YunoHeatClient
+Below are the primary methods available on `YunoHeatClient`.
 
-async with aiohttp.ClientSession() as session:
-    client = await YunoHeatClient.login(
-        "you@example.com",
-        "password",
-        session=session,
-    )
-    # The client uses your session; it won't be closed when client closes
-    balance = await client.get_open_bill_due()
-    # Session remains open for other tasks
-```
+### Factory Methods
+| Method | Returns | Description |
+|:---|:---|:---|
+| `login(username, password, *, token_store=None, session=None)` | `YunoHeatClient` | Authenticate and create a new client session. |
+| `from_saved_tokens(username, password, *, token_store=None, session=None)` | `YunoHeatClient` | Restore session from cached tokens (optionally supplying credentials for fallback refresh). |
 
-### Exception handling
+### Client Methods
+| Method | Returns | Description |
+|:---|:---|:---|
+| `get_open_bill_due()` | `OpenBillDue` | Fetch current outstanding balance (EUR). |
+| `get_usage_events(date_from, date_to, ...)` | `UsageEventsResponse` | Fetch paginated raw meter readings. |
+| `get_usage_report(date_from, date_to, interval)` | `UsageReport` | Retrieve aggregated kWh + EUR by day, week, month, etc. |
+| `get_person_customer()` | `PersonCustomer` | Retrieve account and contact details. |
+| `get_invoices(date_from, date_to, ...)` | `InvoicesResponse` | Retrieve list of historical invoices. |
+| `get_bill(bill_id)` | `Bill` | Fetch a single bill by ID. |
+| `get_credit_balances()` | `CreditBalancesResponse` | Fetch current prepaid credit balances. |
 
-The library raises specific exception types for different error scenarios:
+---
 
-```python
-from yunoheat import (
-    YunoHeatClient,
-    ConfigEntryAuthFailed,  # Invalid credentials; user must re-authenticate
-    AuthError,              # Token refresh failed; may be transient
-    TokenExpiredError,      # Refresh token expired; requires full login
-    APIConnectionError,     # Network error; may be transient
-    APIError,               # API returned 4xx/5xx error
-    EntityDiscoveryError,   # Bootstrap failed (entity context resolution)
-)
+## Technical Notes
 
-async def safe_login(username: str, password: str):
-    try:
-        return await YunoHeatClient.login(username, password)
-    except ConfigEntryAuthFailed:
-        print("Invalid credentials. Please check your username and password.")
-        raise
-    except AuthError as e:
-        print(f"Auth error (may be transient): {e}")
-        raise
-    except APIConnectionError as e:
-        print(f"Network error: {e}")
-        raise
-```
+* **Sessions**: Access tokens are valid for 30 minutes. The library automatically performs silent background refreshes when calling API methods.
+* **External Session**: Pass a shared `aiohttp.ClientSession` using the `session` keyword argument to reuse connections in integrations (e.g., Home Assistant).
+* **Timestamps**: All times are parsed to UTC. Monetary fields are returned in EUR. Energy usage is in kWh.
 
-## Notes
+---
 
-- **Token storage**: Tokens are persisted to `~/.config/yunoheat/tokens.json` by default (mode `0600`). Use a custom `TokenStore` to store tokens elsewhere (e.g., Home Assistant config entry storage).
-- **Token refresh**: Access tokens expire after 30 minutes. The library refreshes them automatically on demand.
-- **Session ownership**: If you provide an external `aiohttp.ClientSession`, the library will not close it. If the library creates its own session, it will be closed on `await client.close()`.
-- **Timestamps**: All times are UTC. Monetary values are EUR. Energy values are kWh.
-- **API endpoint**: The underlying API is the Tridens Monetization self-care platform at `app.tridenstechnology.com`.
+## Contributing
+
+Please see the [Contributing Guide](https://Irishsmurf.github.io/pyyunoheat/contributing/) to set up a local development environment, run tests, and format code.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

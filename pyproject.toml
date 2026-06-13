@@ -35,6 +35,10 @@ dev = [
     "python-dotenv>=1.0",
     "ruff>=0.4",
 ]
+docs = [
+    "mkdocs>=1.6.1",
+    "mkdocs-material>=9.7.5",
+]
 
 [tool.hatch.build.targets.wheel]
 packages = ["yunoheat"]

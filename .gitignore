@@ -40,3 +40,6 @@ htmlcov/
 
 # Auth tokens — never commit
 tokens.json
+
+# MkDocs build directory
+site/

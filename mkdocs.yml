@@ -1,0 +1,63 @@
+site_name: pyyunoheat
+site_url: https://Irishsmurf.github.io/pyyunoheat/
+site_description: Async Python client for the Yuno Energy Heat API
+site_author: Irishsmurf
+
+repo_name: Irishsmurf/pyyunoheat
+repo_url: https://github.com/Irishsmurf/pyyunoheat
+
+theme:
+  name: material
+  logo: assets/logo.svg
+  favicon: assets/icon.svg
+  features:
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.code.annotate
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: custom
+      accent: custom
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+
+extra_css:
+  - stylesheets/extra.css
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.tabbed:
+      alternate_style: true
+  - tables
+  - toc:
+      permalink: true
+
+nav:
+  - Home: index.md
+  - User Guide: user-guide.md
+  - Architecture:
+      - Overview: architecture.md
+      - Tridens API Specification: yuno-energy-heat-api-documentation.md
+  - API Reference: api.md
+  - Contributing: contributing.md
