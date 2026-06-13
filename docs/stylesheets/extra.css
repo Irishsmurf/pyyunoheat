@@ -140,3 +140,13 @@
   background-color: #1e2030;
   border-color: rgba(255, 255, 255, 0.05);
 }
+
+/* Fix active sidebar navigation link contrast */
+.md-nav__link--active {
+  color: var(--brand-purple) !important;
+  font-weight: 700;
+}
+
+[data-md-color-scheme="slate"] .md-nav__link--active {
+  color: var(--brand-cyan) !important;
+}
